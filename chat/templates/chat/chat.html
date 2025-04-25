@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}채팅{% endblock %}
+
+{% block content %}
+
+<style>
+  #chat-log {
+    height: 400px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: #f9f9f9;
+  }
+
+  .chat-message {
+    margin-bottom: 10px;          /* 줄 간격 */
+    padding: 6px 10px;
+    border-radius: 15px;
+    #display: inline-block;
+    display: block;
+    max-width: 70%;
+    word-break: break-word;
+    width: fit-content;
+    clear: both;                  /* 줄바꿈 강제 */
+  }
+
+  .me {
+    background-color: #dbeafe;
+    align-self: flex-end;
+  }
+
+  .other {
+    background-color: #e5e7eb;
+  }
+</style>
+
+
+<h2>실시간 채팅</h2>
+
+<div id="chat-log">
+  {% for chat in chat_history %}
+    <div class="chat-message {% if chat.username == request.user.username %}me{% else %}other{% endif %}">
+      <strong>{{ chat.username }}</strong>: {{ chat.message }}
+    </div>
+  {% endfor %}
+</div>
+
+<form id="chat-form">
+  {% csrf_token %}
+  <input id="chat-message-input" type="text" size="100" placeholder="메시지를 입력하세요..." autocomplete="off" />
+  <button type="submit">보내기</button>
+</form>
+
+<script>
+  const roomName = "lobby";
+  const username = "{{ request.user.username|default:'익명'|escapejs }}";
+  const chatSocket = new WebSocket(
+    'ws://' + window.location.host + '/ws/chat/' + roomName + '/'
+  );
+
+  chatSocket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+    const messageElem = document.createElement('div');
+    messageElem.classList.add('chat-message');
+    messageElem.classList.add(data.username === username ? 'me' : 'other');
+    messageElem.innerHTML = `<strong>${data.username}</strong>: ${data.message}`;
+    document.querySelector('#chat-log').appendChild(messageElem);
+    document.querySelector('#chat-log').scrollTop = document.querySelector('#chat-log').scrollHeight;
+  };
+
+  document.querySelector('#chat-form').onsubmit = function(e) {
+    e.preventDefault();
+    const messageInputDom = document.querySelector('#chat-message-input');
+    const message = messageInputDom.value;
+    if (message.trim() !== '') {
+      chatSocket.send(JSON.stringify({
+        message: message,
+        username: username
+      }));
+      messageInputDom.value = '';
+    }
+  };
+</script>
+{% endblock %}

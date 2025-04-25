@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}로그인{% endblock %}
+
+{% block content %}
+<div style="display: flex; min-height: 70vh;">
+  <main style="flex: 1; padding: 40px;">
+    <h2>로그인</h2>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" style="padding: 10px 20px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">로그인</button>
+    </form>
+  </main>
+</div>
+{% endblock %}

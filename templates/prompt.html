@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}프롬프트{% endblock %}
+
+{% block content %}
+<style>
+  body {
+    background-image: url("/static/img/f8f4fa8b-07fb-42ee-b857-aad0f6457412.png");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+  }
+  .prompt-container {
+    background-color: rgba(255, 255, 255, 0.95);
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    max-width: 1200px;
+    margin: 40px auto;
+  }
+  textarea {
+    font-family: 'Segoe UI', sans-serif;
+  }
+  h2, h3 {
+    color: #1e3a8a;
+  }
+</style>
+
+<div style="padding: 40px;">
+  <h2>프롬프트 테스트</h2>
+  <form method="post">
+    {% csrf_token %}
+    <div style="display: flex; gap: 20px;">
+      <!-- 입력 영역 -->
+      <div style="flex: 1;">
+        <h3>입력</h3>
+        <textarea name="prompt_text" rows="10" placeholder="텍스트를 입력하세요" style="width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px;"></textarea>
+        <div style="margin-top: 10px; display: flex; gap: 10px;">
+          <button type="submit" name="action" value="generate" style="padding: 10px 20px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">출력</button>
+          <button type="submit" name="action" value="summarize" style="padding: 10px 20px; background-color: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">과정 요약</button>
+        </div>
+      </div>
+
+      <!-- 출력 영역 -->
+      <div style="flex: 1;">
+        <h3>출력</h3>
+        {% if result and request.POST.action == 'generate' %}
+          <div style="background: #f3f4f6; padding: 20px; border-radius: 6px;">
+            {{ result }}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </form>
+
+  <!-- 과정 요약 영역 -->
+  {% if result and request.POST.action == 'summarize' %}
+    <div style="margin-top: 30px; background: #fef9c3; padding: 20px; border-radius: 6px;">
+      <h3>과정 요약</h3>
+      <p>{{ result }}</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
