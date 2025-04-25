@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}AI 프롬프트{% endblock %}</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      background-color: #f9fafb;
+      display: flex;
+      min-height: 100vh;
+    }
+    aside {
+      width: 200px;
+      background: #e5e7eb;
+      padding: 20px;
+    }
+    main {
+      flex-grow: 1;
+    }
+    header {
+      background-color: #2563eb;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    a {
+      text-decoration: none;
+      color: #2563eb;
+    }
+  </style>
+</head>
+<body>
+  <aside>
+    <h3>메뉴</h3>
+    <ul style="list-style: none; padding: 0;">
+      <li><a href="{% url 'home' %}">홈</a></li>
+      <li><a href="{% url 'signup' %}">회원가입</a></li>
+      {% if user.is_authenticated %}
+        <li>
+          <form method="post" action="{% url 'logout' %}" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" style="background: none; border: none; color: #dc2626; cursor: pointer; padding: 0;">로그아웃</button>
+          </form>
+        </li>
+        {% else %}
+        <li><a href="{% url 'login' %}">로그인</a></li>
+        {% endif %}
+      <li><a href="{% url 'prompt' %}">프롬프트</a></li>
+      <li><a href="{% url 'chat' %}">채팅</a></li>
+    </ul>
+  </aside>
+  <main>
+    <header>
+      <h1>AI 프롬프트 서비스</h1>
+    </header>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
