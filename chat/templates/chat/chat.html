@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-
 {% block title %}채팅{% endblock %}
 
 {% block content %}
@@ -14,74 +13,139 @@
     margin-bottom: 10px;
     background: #f9f9f9;
   }
-
+  .chat-wrapper {
+    margin-bottom: 10px;
+  }
+  .chat-timestamp {
+    font-size: 0.7em;
+    color: #888;
+    margin-bottom: 2px;
+    margin-left: 5px;
+  }
   .chat-message {
-    margin-bottom: 10px;          /* 줄 간격 */
     padding: 6px 10px;
     border-radius: 15px;
-    #display: inline-block;
-    display: block;
+    display: inline-block;
     max-width: 70%;
     word-break: break-word;
-    width: fit-content;
-    clear: both;                  /* 줄바꿈 강제 */
+    background: #e5e7eb;
   }
-
   .me {
     background-color: #dbeafe;
-    align-self: flex-end;
   }
-
   .other {
     background-color: #e5e7eb;
   }
+  .heart-btn {
+    border: none;
+    background: none;
+    font-size: 16px;
+    margin-left: 5px;
+    cursor: pointer;
+  }
 </style>
-
 
 <h2>실시간 채팅</h2>
 
 <div id="chat-log">
   {% for chat in chat_history %}
-    <div class="chat-message {% if chat.username == request.user.username %}me{% else %}other{% endif %}">
-      <strong>{{ chat.username }}</strong>: {{ chat.message }}
+    <div class="chat-wrapper">
+      <div class="chat-timestamp">{{ chat.timestamp|date:"Y-m-d H:i" }}</div>
+      <div class="chat-message {% if chat.user.username == request.user.username %}me{% else %}other{% endif %}">
+        <strong>{{ chat.user.username }}</strong>: {{ chat.message }}
+        <button class="heart-btn" data-id="{{ chat.id }}">
+          {{ chat.liked|yesno:"❤️,🤍" }}
+        </button>
+      </div>
     </div>
   {% endfor %}
 </div>
 
-<form id="chat-form">
+<form id="chat-form" style="display: flex; gap: 5px; align-items: center;">
   {% csrf_token %}
   <input id="chat-message-input" type="text" size="100" placeholder="메시지를 입력하세요..." autocomplete="off" />
+  <label style="cursor: pointer;">
+    <input type="checkbox" id="heart-toggle" style="display: none;">
+    <span id="heart-icon" style="font-size: 20px;">🤍</span>
+  </label>
   <button type="submit">보내기</button>
 </form>
 
 <script>
-  const roomName = "lobby";
-  const username = "{{ request.user.username|default:'익명'|escapejs }}";
-  const chatSocket = new WebSocket(
-    'ws://' + window.location.host + '/ws/chat/' + roomName + '/'
+const roomName = "lobby";
+const username = "{{ request.user.username|escapejs }}";
+
+const chatSocket = new WebSocket(
+    (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + "/ws/chat/" + roomName + "/"
   );
 
-  chatSocket.onmessage = function(e) {
-    const data = JSON.parse(e.data);
-    const messageElem = document.createElement('div');
-    messageElem.classList.add('chat-message');
-    messageElem.classList.add(data.username === username ? 'me' : 'other');
-    messageElem.innerHTML = `<strong>${data.username}</strong>: ${data.message}`;
-    document.querySelector('#chat-log').appendChild(messageElem);
-    document.querySelector('#chat-log').scrollTop = document.querySelector('#chat-log').scrollHeight;
-  };
+const heartToggle = document.querySelector('#heart-toggle');
+const heartIcon = document.querySelector('#heart-icon');
+heartToggle.addEventListener('change', () => {
+  heartIcon.textContent = heartToggle.checked ? '❤️' : '🤍';
+});
 
-  document.querySelector('#chat-form').onsubmit = function(e) {
-    e.preventDefault();
-    const messageInputDom = document.querySelector('#chat-message-input');
-    const message = messageInputDom.value;
-    if (message.trim() !== '') {
-      chatSocket.send(JSON.stringify({
-        message: message,
-        username: username
-      }));
-      messageInputDom.value = '';
-    }
-  };
+chatSocket.onmessage = function(e) {
+  const data = JSON.parse(e.data);
+
+  const wrapper = document.createElement('div');
+  wrapper.classList.add('chat-wrapper');
+
+  const timestamp = document.createElement('div');
+  timestamp.classList.add('chat-timestamp');
+  timestamp.innerText = data.timestamp;
+
+  const messageElem = document.createElement('div');
+  messageElem.classList.add('chat-message');
+  messageElem.classList.add(data.username === username ? 'me' : 'other');
+
+  messageElem.innerHTML = `
+    <strong>${data.username}</strong>: ${data.message}
+    <button class="heart-btn" data-id="${data.id}">${data.liked ? '❤️' : '🤍'}</button>
+  `;
+
+  wrapper.appendChild(timestamp);
+  wrapper.appendChild(messageElem);
+
+  const log = document.querySelector('#chat-log');
+  log.appendChild(wrapper);
+  log.scrollTop = log.scrollHeight;
+
+  // 새로 생긴 하트 버튼도 이벤트 연결!
+  messageElem.querySelector('.heart-btn').addEventListener('click', function() {
+    const msgId = this.dataset.id;
+    fetch("{% url 'toggle_like' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({ msg_id: msgId })
+    })
+    .then(response => response.json())
+    .then(data => {
+      this.textContent = data.liked ? '❤️' : '🤍';
+    });
+  });
+};
+
+document.querySelector('#chat-form').onsubmit = function(e) {
+  e.preventDefault();
+  const messageInput = document.querySelector('#chat-message-input');
+  const message = messageInput.value.trim();
+  const liked = heartToggle.checked;
+
+  if (message !== '') {
+    chatSocket.send(JSON.stringify({
+      message: message,
+      username: username,
+      liked: liked
+    }));
+    messageInput.value = '';
+    heartToggle.checked = false;
+    heartIcon.textContent = '🤍';
+  }
+};
 </script>
+
 {% endblock %}

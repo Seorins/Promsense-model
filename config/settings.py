@@ -25,8 +25,12 @@ SECRET_KEY = 'django-insecure-30xoxv$)uw*alf=3u1pg9p(@!(9p=cw$vfg6d160mhw4kdw__h
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-#ALLOWED_HOSTS = ['ai-prompt.duckdns.org', '127.0.0.1', 'localhost', '141.223.124.7']
+#ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['ai-prompt.duckdns.org', '127.0.0.1', 'localhost', '141.223.124.7']
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://ai-prompt.duckdns.org',
+]
 
 #'ai-prompt.duckdns.org', '141.223.124.7'
 
